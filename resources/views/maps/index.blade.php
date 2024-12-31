@@ -13,62 +13,53 @@
         <!-- Carte principale -->
         <div class="row">
             <div class="col-md-12">
-                <div class="card shadow border-0">
-                    <div class="card-header bg-gradient bg-primary text-white py-3">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-route me-2"></i>Planification d'Itinéraire
-                        </h5>
-                    </div>
-                    <div class="card-body">
+                <div class="card shadow-sm border-0 rounded-lg overflow-hidden">
+                    <div class="card-body p-4">
                         <!-- Formulaire -->
                         <form id="routeForm" class="mb-4">
-                            <div class="row g-3">
+                            <div class="row g-3 align-items-center">
                                 <!-- Point de départ -->
-                                <div class="col-md-5">
-                                    <div class="input-group input-group-lg shadow-sm">
-                                        <span class="input-group-text border-end-0">
-                                            <i class="fas fa-map-marker-alt text-primary"></i>
+                                <div class="col-md-6">
+                                    <div class="input-group input-group-lg shadow-sm rounded-lg">
+                                        <span class="input-group-text border-end-0 bg-primary text-white">
+                                            <i class="fas fa-map-marker-alt"></i>
                                         </span>
                                         <input id="origin" type="text" class="form-control border-start-0"
                                             placeholder="Point de départ" required>
-                                        <button class="btn btn-outline-secondary clear-input" type="button"
-                                            title="Effacer">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                        <button class="btn btn-outline-primary" type="button" id="useCurrentLocation"
-                                            title="Ma position">
-                                            <i class="fas fa-location-arrow"></i>
-                                        </button>
                                     </div>
                                 </div>
 
+                                <!-- Bouton de récupération de la position actuelle -->
+                                <div class="col-md-4 d-flex justify-content-center">
+                                    <button class="btn btn-primary btn-lg w-100 shadow-sm rounded-lg" type="button"
+                                        id="useCurrentLocation" title="Ma position">
+                                        <i class="fas fa-location-arrow me-2"></i>Utiliser ma position
+                                    </button>
+                                </div>
+
                                 <!-- Destination -->
-                                <div class="col-md-5">
-                                    <div class="input-group input-group-lg shadow-sm">
-                                        <span class="input-group-text border-end-0">
-                                            <i class="fas fa-flag-checkered text-danger"></i>
+                                <div class="col-md-6">
+                                    <div class="input-group input-group-lg shadow-sm rounded-lg">
+                                        <span class="input-group-text border-end-0 bg-primary text-white">
+                                            <i class="fas fa-flag-checkered"></i>
                                         </span>
                                         <input id="destination" type="text" class="form-control border-start-0"
                                             placeholder="Destination" required>
-                                        <button class="btn btn-outline-secondary clear-input" type="button"
-                                            title="Effacer">
-                                            <i class="fas fa-times"></i>
-                                        </button>
                                     </div>
                                 </div>
 
                                 <!-- Bouton de calcul -->
-                                <div class="col-md-2">
+                                <div class="col-md-4 d-flex justify-content-center">
                                     <button type="submit" id="calculateRoute"
-                                        class="btn btn-primary btn-lg w-100 shadow-sm">
-                                        <i class="fas fa-calculator me-2"></i>Calculer
+                                        class="btn btn-success btn-lg w-100 shadow-sm rounded-lg">
+                                        <i class="fas fa-calculator me-2"></i>Calculer l'itinéraire
                                     </button>
                                 </div>
                             </div>
                         </form>
 
                         <!-- Informations sur l'itinéraire -->
-                        <div id="routeInfo" class="alert alert-info shadow-sm d-none mb-4">
+                        <div id="routeInfo" class="alert alert-info shadow-sm d-none mb-4 p-3">
                             <div class="row text-center">
                                 <div class="col-md-4">
                                     <div class="d-flex align-items-center justify-content-center">
@@ -92,8 +83,8 @@
                         </div>
 
                         <!-- Carte -->
-                        <div class="map-container shadow-sm">
-                            <div id="map" class="rounded"></div>
+                        <div class="map-container shadow-sm rounded-lg">
+                            <div id="map" class="rounded-lg"></div>
                         </div>
                     </div>
                 </div>
@@ -113,6 +104,10 @@
         </div>
     </div>
 @endsection
+
+
+
+
 
 
 @push('styles')
@@ -253,6 +248,9 @@
     </style>
 @endpush
 
+
+
+
 @push('scripts')
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://maps.googleapis.com/maps/api/js?key={{ config('googlemaps.key') }}&libraries=places"></script>
@@ -387,31 +385,27 @@
 
                     navigator.geolocation.getCurrentPosition(
                         (position) => {
-                            $.ajax({
-                                    url: '/map/current-location', // URL modifiée pour correspondre à votre route
-                                    method: 'POST',
-                                    data: {
-                                        _token: $('meta[name="csrf-token"]').attr('content'),
-                                        latitude: position.coords.latitude,
-                                        longitude: position.coords.longitude
-                                    },
-                                    dataType: 'json'
-                                })
-                                .done((response) => {
-                                    if (response.success) {
-                                        $('#origin').val(response.address);
-                                        this.updateMap(response.location, 'origin');
+                            const latitude = position.coords.latitude;
+                            const longitude = position.coords.longitude;
+                            this.geocoder.geocode({
+                                'location': {
+                                    lat: latitude,
+                                    lng: longitude
+                                }
+                            }, (results, status) => {
+                                if (status === 'OK') {
+                                    if (results[0]) {
+                                        $('#origin').val(results[0].formatted_address);
+                                        this.updateMap(results[0].geometry.location, 'origin');
                                         this.showToast('Position actuelle récupérée', 'success');
                                     } else {
-                                        this.showToast(response.message, 'error');
+                                        this.showToast('Aucun résultat trouvé', 'error');
                                     }
-                                })
-                                .fail((error) => {
-                                    this.handleError(error);
-                                })
-                                .always(() => {
-                                    this.showLoading(false);
-                                });
+                                } else {
+                                    this.showToast('Erreur de géocodage: ' + status, 'error');
+                                }
+                                this.showLoading(false);
+                            });
                         },
                         (error) => {
                             this.showLoading(false);
@@ -587,3 +581,4 @@
         });
     </script>
 @endpush
+

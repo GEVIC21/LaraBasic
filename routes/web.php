@@ -14,8 +14,11 @@ use App\Models\User;
 
 
 Route::get('/map', [MapController::class, 'index'])->name('map.index');
-Route::post('/map/calculate-route', [MapController::class, 'calculateRoute'])->name('map.calculate');
+
+
 Route::post('/map/current-location', [MapController::class, 'getCurrentLocation'])->name('map.location');
+Route::post('/map/calculate-route', [MapController::class, 'calculateRoute'])->name('map.calculate');
+
 
 Route::get('/test-google-maps', function() {
     try {

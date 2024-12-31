@@ -13,7 +13,7 @@
         <!-- Carte principale -->
         <div class="row">
             <div class="col-md-12">
-                <div class="card shadow-sm border-0 rounded-lg overflow-hidden">
+                <div class="card shadow-lg border-0 rounded-lg overflow-hidden">
                     <div class="card-body p-4">
                         <!-- Formulaire -->
                         <form id="routeForm" class="mb-4">
@@ -37,16 +37,27 @@
                                     </button>
                                 </div>
 
-                                <!-- Destination -->
+                                <!-- Conteneur pour les destinations intermédiaires -->
+                                <div id="waypoints-container" class="mt-4"></div>
+
+                                <!-- Destination finale -->
                                 <div class="col-md-6">
                                     <div class="input-group input-group-lg shadow-sm rounded-lg">
                                         <span class="input-group-text border-end-0 bg-primary text-white">
                                             <i class="fas fa-flag-checkered"></i>
                                         </span>
                                         <input id="destination" type="text" class="form-control border-start-0"
-                                            placeholder="Destination" required>
+                                            placeholder="Destination finale" required>
                                     </div>
                                 </div>
+
+                                <!-- Bouton d'ajout d'une nouvelle destination -->
+                                <div class="col-md-4 d-flex justify-content-center">
+                                    <button id="add-waypoint" class="btn btn-outline-primary btn-lg  w-100 shadow-sm rounded-lg"  type="button">
+                                        <i class="fas fa-plus"></i> Ajouter une destination
+                                    </button>
+                                </div>
+
 
                                 <!-- Bouton de calcul -->
                                 <div class="col-md-4 d-flex justify-content-center">
@@ -84,7 +95,7 @@
 
                         <!-- Carte -->
                         <div class="map-container shadow-sm rounded-lg">
-                            <div id="map" class="rounded-lg"></div>
+                            <div id="map" class="rounded-lg" style="height: 500px;"></div>
                         </div>
                     </div>
                 </div>
@@ -106,10 +117,6 @@
 @endsection
 
 
-
-
-
-
 @push('styles')
     <style>
         :root {
@@ -121,16 +128,41 @@
             --danger-color: #dc3545;
             --light-color: #f8f9fa;
             --dark-color: #212529;
+            --shadow-color: rgba(0, 0, 0, 0.1);
         }
 
         /* Styles généraux */
         body {
+            font-family: 'Arial', sans-serif;
             background-color: var(--light-color);
+            color: var(--dark-color);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
         }
 
         .card {
             border-radius: 1rem;
             overflow: hidden;
+            box-shadow: 0 4px 8px var(--shadow-color);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 8px 16px var(--shadow-color);
+        }
+
+        .card-body {
+            padding: 30px;
         }
 
         /* Styles des inputs */
@@ -143,107 +175,239 @@
         }
 
         .input-group-text {
-            background-color: transparent;
+            background-color: var(--primary-color);
             border-right: none;
+            color: #fff;
         }
 
         .form-control {
             border-left: none;
+            border-color: #ced4da;
         }
 
         .form-control:focus {
             box-shadow: none;
-            border-color: #ced4da;
+            border-color: var(--primary-color);
         }
 
-        /* Bouton clear */
-        .clear-input {
-            display: none;
-            z-index: 4;
+        /* Boutons */
+        .btn {
+            padding: 0.75rem 1.25rem;
+            font-size: 1rem;
+            border-radius: 0.375rem;
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
         }
 
-        .input-group input:not(:placeholder-shown)+.clear-input {
-            display: block;
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
         }
 
-        /* Carte */
-        .map-container {
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+        }
+
+        .btn-success:hover {
+            background-color: #218838;
+            border-color: #218838;
+        }
+
+        .btn-outline-primary {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-outline-primary:hover {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: #fff;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+            border-color: #c82333;
+        }
+
+        /* Alertes */
+        .alert {
+            padding: 1rem 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            border-radius: 0.375rem;
+        }
+
+        .alert-info {
+            color: #0c5460;
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+
+        /* Flexbox et alignements */
+        .d-flex {
+            display: flex;
+        }
+
+        .justify-content-center {
+            justify-content: center;
+        }
+
+        .align-items-center {
+            align-items: center;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-primary {
+            color: var(--primary-color) !important;
+        }
+
+        .text-warning {
+            color: var(--warning-color) !important;
+        }
+
+        .text-success {
+            color: var(--success-color) !important;
+        }
+
+        .text-danger {
+            color: var(--danger-color) !important;
+        }
+
+        .fs-5 {
+            font-size: 1.25rem;
+        }
+
+        .me-2 {
+            margin-right: 0.5rem;
+        }
+
+        .me-3 {
+            margin-right: 1rem;
+        }
+
+        .mt-3 {
+            margin-top: 1rem;
+        }
+
+        .mt-4 {
+            margin-top: 1.5rem;
+        }
+
+        .mb-4 {
+            margin-bottom: 1.5rem;
+        }
+
+        .p-3 {
             padding: 1rem;
-            background: var(--light-color);
-            border-radius: 1rem;
-            margin-top: 2rem;
+        }
+
+        .d-none {
+            display: none;
+        }
+
+        .shadow-sm {
+            box-shadow: 0 0.125rem 0.25rem var(--shadow-color) !important;
+        }
+
+        .rounded-lg {
+            border-radius: 0.5rem;
+        }
+
+        .bg-primary {
+            background-color: var(--primary-color) !important;
+        }
+
+        .bg-white {
+            background-color: #fff !important;
+        }
+
+        .bg-opacity-75 {
+            background-color: rgba(255, 255, 255, 0.75);
+        }
+
+        .position-fixed {
+            position: fixed;
+        }
+
+        .bottom-0 {
+            bottom: 0;
+        }
+
+        .end-0 {
+            right: 0;
+        }
+
+        .top-0 {
+            top: 0;
+        }
+
+        .start-0 {
+            left: 0;
+        }
+
+        .w-100 {
+            width: 100%;
+        }
+
+        .h-100 {
+            height: 100%;
+        }
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+
+        /* Styles spécifiques */
+        .display-4 {
+            font-size: 3.5rem;
+            font-weight: 300;
+            line-height: 1.2;
+        }
+
+        .fw-bold {
+            font-weight: 700;
+        }
+
+        .toast-container {
+            z-index: 1050;
+        }
+
+        #loadingOverlay {
+            z-index: 1050;
+        }
+
+        .map-container {
+            margin-top: 20px;
         }
 
         #map {
-            height: 600px;
             width: 100%;
-            border: none;
-            border-radius: 0.5rem;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            height: 500px;
         }
 
-        /* AutoComplete Google */
-        .pac-container {
-            border-radius: 0 0 1rem 1rem;
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-            border: none;
-            margin-top: 5px;
-            z-index: 1051 !important;
-        }
 
-        .pac-item {
-            padding: 0.75rem 1rem;
-            font-family: inherit;
-            border: none;
-        }
-
-        .pac-item:hover {
-            background-color: var(--light-color);
-            cursor: pointer;
-        }
-
-        .pac-item-selected {
-            background-color: rgba(13, 110, 253, 0.1);
-        }
-
-        /* Toast notifications */
-        .toast {
-            border: none;
-            border-radius: 1rem;
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-        }
-
-        .toast-success .toast-header {
-            background-color: var(--success-color);
-            color: white;
-        }
-
-        .toast-error .toast-header {
-            background-color: var(--danger-color);
-            color: white;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .input-group {
-                margin-bottom: 1rem;
-            }
-
-            #map {
-                height: 400px;
-            }
-
-            .col-md-2 {
-                margin-top: 1rem;
-            }
-
-            #routeInfo .row {
-                flex-direction: column;
-            }
-
-            #routeInfo .col-md-4 {
-                margin-bottom: 0.5rem;
-            }
+        .waypoint-input {
+            margin-bottom: 10px;
         }
     </style>
 @endpush
@@ -366,6 +530,10 @@
                         this.getCurrentLocation();
                     });
 
+                    $('#add-waypoint').on('click', () => {
+                        this.addWaypoint();
+                    });
+
                     $('.clear-input').on('click', function() {
                         $(this).siblings('input').val('').focus();
                     });
@@ -430,9 +598,61 @@
                     );
                 }
 
+                addWaypoint() {
+                    const waypointInput = $(`
+                        <div class="col-md-6 waypoint-input">
+                            <div class="input-group input-group-lg shadow-sm rounded-lg">
+                                <span class="input-group-text border-end-0 bg-primary text-white">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </span>
+                                <input type="text" class="form-control border-start-0 waypoint" placeholder="Destination intermédiaire" required>
+                                <button type="button" class="btn btn-danger remove-waypoint">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `);
+
+                    $('#waypoints-container').append(waypointInput);
+                    this.initAutocompleteWaypoint(waypointInput.find('.waypoint'));
+                }
+
+                initAutocompleteWaypoint(input) {
+                    const options = {
+                        bounds: this.bounds,
+                        componentRestrictions: {
+                            country: 'TG'
+                        },
+                        fields: ['address_components', 'geometry', 'name', 'formatted_address'],
+                        strictBounds: true,
+                        types: ['geocode', 'establishment']
+                    };
+
+                    const autocomplete = new google.maps.places.Autocomplete(input[0], options);
+
+                    autocomplete.addListener('place_changed', () => {
+                        const place = autocomplete.getPlace();
+                        if (!place.geometry) {
+                            this.showToast(`Aucun lieu trouvé pour : ${place.name}`, 'error');
+                            return;
+                        }
+                    });
+                }
+
                 calculateRoute() {
                     const origin = $('#origin').val();
                     const destination = $('#destination').val();
+                    const waypoints = [];
+
+                    $('.waypoint').each((_, input) => {
+                        const waypoint = $(input).val();
+                        if (waypoint) {
+                            waypoints.push({
+                                location: waypoint,
+                                stopover: true
+                            });
+                        }
+                    });
 
                     if (!origin || !destination) {
                         this.showToast('Veuillez remplir tous les champs', 'error');
@@ -446,13 +666,14 @@
                             method: 'POST',
                             data: JSON.stringify({
                                 origin: origin,
-                                destination: destination
+                                destination: destination,
+                                waypoints: waypoints
                             }),
                             contentType: 'application/json'
                         })
                         .done((response) => {
                             if (response.success) {
-                                this.displayRoute(origin, destination, response.data);
+                                this.displayRoute(origin, destination, response.data, waypoints);
                                 this.showToast('Itinéraire calculé avec succès', 'success');
                             } else {
                                 this.showToast(response.message, 'error');
@@ -466,10 +687,11 @@
                         });
                 }
 
-                displayRoute(origin, destination, routeData) {
+                displayRoute(origin, destination, routeData, waypoints) {
                     const request = {
                         origin: origin,
                         destination: destination,
+                        waypoints: waypoints,
                         travelMode: google.maps.TravelMode.DRIVING
                     };
 
@@ -578,7 +800,13 @@
             } else {
                 console.error('Google Maps API non chargée');
             }
+
+            // Gestion des boutons de suppression des destinations intermédiaires
+            $(document).on('click', '.remove-waypoint', function() {
+                $(this).closest('.waypoint-input').remove();
+            });
         });
     </script>
 @endpush
+
 
